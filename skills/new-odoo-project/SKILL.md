@@ -26,8 +26,8 @@ Before running this skill, ensure the following are in place:
 
 Ask the user for the following in a single message. Do not proceed until you have answers:
 
-1. **Project directory path** — where should the project live? (e.g. `~/projects/client-acme-website`)
-2. **Client / project name** — used for folder naming and memory
+1. **Project parent directory** — the folder where the project subdirectory should be created (e.g. `~/projects` or `~/Odoo`)
+2. **Client / project name** — used for folder naming and memory. The project will be created at `{parent_dir}/{slugified-client-name}/` (e.g. `~/Odoo/client-acme/`)
 3. **Odoo URL** — e.g. `https://mysite.odoo.com`
 4. **Odoo DB name** — e.g. `mysite-main-12345`
 5. **Odoo login email**
@@ -42,6 +42,10 @@ Do NOT ask about brand, fonts, or design yet — those come after the project is
 ---
 
 ## Step 2 — Create the project directory
+
+Derive `{project_dir}` by slugifying the client name (lowercase, replace spaces with hyphens) and appending it to the parent directory: `{parent_dir}/{slugified-client-name}`.
+
+For example, if parent is `~/Odoo` and client name is "Demo Video", then `{project_dir}` = `~/Odoo/demo-video`.
 
 ```bash
 mkdir -p {project_dir}/tools
