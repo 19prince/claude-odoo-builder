@@ -73,6 +73,33 @@ Workflows are generic and apply to any Odoo project without modification.
 
 ---
 
+## Step 4b — Create `.gitignore`
+
+Write `.gitignore` to the project root to prevent committing secrets and temporary files:
+
+```
+# Credentials
+.env
+
+# Temporary files
+.tmp/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+```
+
+---
+
 ## Step 5 — Create `.env`
 
 Write `.env` to the project root. **Leave all password fields blank.**
