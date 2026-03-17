@@ -10,6 +10,7 @@ Usage:
 import json
 import os
 import sys
+import warnings
 
 import requests
 from dotenv import load_dotenv
@@ -28,6 +29,13 @@ class OdooClient:
             sys.exit(
                 "ERROR: Missing Odoo credentials. "
                 "Set ODOO_URL, ODOO_DB, ODOO_USER, ODOO_PASSWORD in .env"
+            )
+
+        if self.url.startswith("http://"):
+            warnings.warn(
+                "ODOO_URL uses plain HTTP — credentials will be sent in cleartext. "
+                "Use https:// in production.",
+                stacklevel=2,
             )
 
         self.session = requests.Session()
@@ -121,6 +129,9 @@ class OdooClient:
                 "Check ODOO_USER and ODOO_PASSWORD."
             )
         self.uid = uid
+        # Password is no longer needed — Odoo uses session cookies from here.
+        # Clear it to reduce exposure if the object is logged or serialized.
+        self.password = None
         return self.uid
 
     def search_read(self, model, domain=None, fields=None, limit=0, offset=0):
