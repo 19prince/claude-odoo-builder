@@ -3,7 +3,7 @@
 Turn [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview) into an Odoo website builder. One command scaffolds a complete project with tools, workflows, and configuration for designing, building, and deploying pages on your Odoo website.
 
 # Disclaimer
-By downloading and deploying these files, you take full responsibility. Neither 19 Prince nor Darren are responsible for productivity gains, productivity losses, injury due to falling down rabbit holes, lost sleep, or the annoying conversations you'll feel the need to have about Claude Code.
+By downloading and deploying these files, you take full responsibility. Neither [19 Prince](https://www.19prince.com/) nor Darren are responsible for productivity gains, productivity losses, injury due to falling down rabbit holes, lost sleep, or the annoying conversations you'll feel the need to have about Claude Code.
 
 Seriously, I tried to provide you with some useful tools. I genuinely hope you like them. That said, read the files and be safe out there. You are taking full responsibility for any and all outcomes.
 
