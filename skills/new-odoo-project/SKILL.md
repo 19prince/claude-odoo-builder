@@ -179,6 +179,7 @@ workflows/  # Markdown SOPs
 
 - `workflows/design_page.md` — designing and building pages
 - `workflows/push_to_odoo.md` — pushing content to Odoo
+- `workflows/create_mailing.md` — formatting and pushing email mailings
 - `workflows/css_theming.md` — CSS injection pattern
 - `workflows/migrate_staging_to_prod.md` — staging → production migration
 

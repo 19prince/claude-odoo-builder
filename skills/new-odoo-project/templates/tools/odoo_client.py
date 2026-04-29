@@ -10,7 +10,6 @@ Usage:
 import json
 import os
 import sys
-import warnings
 
 import requests
 from dotenv import load_dotenv
@@ -32,11 +31,18 @@ class OdooClient:
             )
 
         if self.url.startswith("http://"):
-            warnings.warn(
-                "ODOO_URL uses plain HTTP — credentials will be sent in cleartext. "
-                "Use https:// in production.",
-                stacklevel=2,
-            )
+            if os.getenv("ODOO_ALLOW_HTTP", "").lower() == "true":
+                print(
+                    "SECURITY WARNING: ODOO_URL uses plain HTTP. "
+                    "Credentials will be sent in cleartext.",
+                    file=sys.stderr,
+                )
+            else:
+                sys.exit(
+                    "ERROR: ODOO_URL uses plain HTTP — credentials would be sent "
+                    "in cleartext.\nSet ODOO_ALLOW_HTTP=true in .env to proceed "
+                    "at your own risk, or switch to https://."
+                )
 
         self.session = requests.Session()
         self.session.headers.update({"Content-Type": "application/json"})

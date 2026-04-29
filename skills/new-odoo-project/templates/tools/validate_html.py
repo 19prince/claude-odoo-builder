@@ -90,6 +90,32 @@ def check_script_tags(content):
     return issues
 
 
+def check_xss_patterns(content):
+    """Warn about HTML patterns that could indicate XSS payloads."""
+    issues = []
+    if re.search(r'\bon\w+\s*=', content, re.IGNORECASE):
+        issues.append(
+            "WARNING: Event handler attribute(s) found (onclick, onerror, etc.). "
+            "These can be XSS vectors if the content was pasted from an external source."
+        )
+    if re.search(r'javascript\s*:', content, re.IGNORECASE):
+        issues.append(
+            "WARNING: javascript: URI found in href or src. "
+            "This can execute arbitrary code in the browser."
+        )
+    if re.search(r'<iframe', content, re.IGNORECASE):
+        issues.append(
+            "WARNING: <iframe> tag found. "
+            "Verify this is intentional — iframes can load external content."
+        )
+    if re.search(r'<(object|embed)', content, re.IGNORECASE):
+        issues.append(
+            "WARNING: <object> or <embed> tag found. "
+            "These can load external plugins and are rarely needed in Odoo pages."
+        )
+    return issues
+
+
 def check_qweb_wrapper(content):
     """Warn if the arch is not wrapped in a QWeb t-name template."""
     warnings = []
@@ -134,6 +160,7 @@ def validate(content):
         )
 
     warnings.extend(check_script_tags(content))
+    warnings.extend(check_xss_patterns(content))
     warnings.extend(check_qweb_wrapper(content))
 
     return errors, warnings

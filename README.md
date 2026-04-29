@@ -29,6 +29,9 @@ Seriously, I tried to provide you with some useful tools. I genuinely hope you l
 | `validate_html.py` | Pre-push HTML validator for Odoo compatibility |
 | `scaffold_snippet.py` | Generate custom snippet module skeletons |
 | `migrate_to_production.py` | Migrate staging changes to production with backup and rollback |
+| `list_mailings.py` | List email mailings and mailing lists |
+| `get_mailing.py` | Fetch a mailing's body_arch HTML with backup |
+| `push_mailing.py` | Create or update draft mailings (never sends) |
 
 ### Workflows (Markdown SOPs)
 
@@ -40,6 +43,7 @@ Seriously, I tried to provide you with some useful tools. I genuinely hope you l
 | `css_theming.md` | CSS injection via `custom_code_head` |
 | `create_snippet.md` | How to build and deploy custom snippet modules |
 | `manage_pages.md` | Page operations reference (list, fetch, update, delete) |
+| `create_mailing.md` | Format markdown content into an Odoo email mailing |
 | `migrate_staging_to_prod.md` | Full migration guide with dry-run and rollback |
 
 ---
@@ -133,6 +137,9 @@ List all pages, fetch HTML for editing, publish or unpublish, create new pages f
 
 ### Fix visual issues from screenshots
 Share a screenshot and Claude identifies broken elements, writes targeted CSS fixes, and pushes them — all without touching page content.
+
+### Create email mailings
+Bring your newsletter content as structured markdown. Claude fetches an existing mailing as a template, formats the content into Odoo's email HTML, and pushes it as a draft — ready for you to review and send from Odoo.
 
 ### Migrate staging to production
 Build on staging, then migrate to production with automatic backup and one-command rollback.
