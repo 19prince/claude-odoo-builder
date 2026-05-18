@@ -28,6 +28,8 @@ Package a reusable HTML/CSS/JS design element as a proper Odoo module so it appe
 
 ## Step 1: Scaffold the Module
 
+> **Reference:** See `workflows/module_structure.md` for the full directory layout, naming conventions, and when to populate each directory (models, security, data, i18n, wizard, reports).
+
 ```bash
 python3 tools/scaffold_snippet.py \
   --name hero_split_screen \
@@ -40,13 +42,21 @@ This creates a complete module skeleton at:
 .tmp/snippets/hero_split_screen/
 ├── __manifest__.py
 ├── __init__.py
+├── models/
+│   └── __init__.py      ← add model files here if this module stores data
 ├── views/
 │   ├── snippets.xml     ← snippet HTML template + editor registration
 │   └── assets.xml       ← asset bundle reference (fallback for old Odoo)
+├── security/
+│   └── ir.model.access.csv  ← populate if you add models; header row pre-seeded
+├── data/                ← add XML data files here (master data, config)
+├── i18n/                ← add translation .pot/.po files here
 └── static/src/
     ├── scss/snippet.scss
     └── js/snippet.js
 ```
+
+If this snippet module has no custom models, you can leave `models/__init__.py` empty and the `security/ir.model.access.csv` at just its header row — Odoo will install cleanly either way.
 
 ---
 

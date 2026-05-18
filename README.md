@@ -27,7 +27,8 @@ Seriously, I tried to provide you with some useful tools. I genuinely hope you l
 | `list_pages.py` | List all website pages with publish status |
 | `push_page.py` | Create or update pages with QWeb wrapping |
 | `validate_html.py` | Pre-push HTML validator for Odoo compatibility |
-| `scaffold_snippet.py` | Generate custom snippet module skeletons |
+| `scaffold_snippet.py` | Generate a full Odoo module skeleton (models, views, security, data, i18n, static) |
+| `create_survey.py` | Build and deploy Odoo surveys from a YAML definition — questions, answer options, access mode |
 | `migrate_to_production.py` | Migrate staging changes to production with backup and rollback |
 | `list_mailings.py` | List email mailings and mailing lists |
 | `get_mailing.py` | Fetch a mailing's body_arch HTML with backup |
@@ -42,6 +43,8 @@ Seriously, I tried to provide you with some useful tools. I genuinely hope you l
 | `push_to_odoo.md` | How to push content to Odoo safely |
 | `css_theming.md` | CSS injection via `custom_code_head` |
 | `create_snippet.md` | How to build and deploy custom snippet modules |
+| `module_structure.md` | Standard Odoo module directory layout — what each folder is for and when to use it |
+| `design_survey.md` | How to plan, write, and deploy an Odoo survey from a YAML definition |
 | `manage_pages.md` | Page operations reference (list, fetch, update, delete) |
 | `create_mailing.md` | Format markdown content into an Odoo email mailing |
 | `migrate_staging_to_prod.md` | Full migration guide with dry-run and rollback |
@@ -73,7 +76,7 @@ cp -r claude-odoo-builder/skills/* ~/.claude/skills/
 3. Install Python dependencies:
 
 ```bash
-pip install requests python-dotenv
+pip install requests python-dotenv pyyaml
 ```
 
 ---
@@ -141,6 +144,12 @@ Share a screenshot and Claude identifies broken elements, writes targeted CSS fi
 ### Create email mailings
 Bring your newsletter content as structured markdown. Claude fetches an existing mailing as a template, formats the content into Odoo's email HTML, and pushes it as a draft — ready for you to review and send from Odoo.
 
+### Build and deploy surveys
+Describe your survey — webinar feedback, NPS, customer research, lead-gen quiz. Claude writes a YAML definition with your questions and answer options, dry-runs it to confirm the payload, then deploys it to Odoo and returns the public share URL. Works with radio buttons, checkboxes, free text, scale ratings, date inputs, and more. Requires the Odoo Surveys app to be installed.
+
+### Build a module
+Claude scaffolds a complete, installable Odoo module following the standard directory structure — `models/`, `views/`, `security/`, `data/`, `i18n/`, and `static/`. Whether you're building a reusable website snippet or a full business module, the skeleton is production-ready from the first file. Claude follows `module_structure.md` to know what goes where.
+
 ### Migrate staging to production
 Build on staging, then migrate to production with automatic backup and one-command rollback.
 
@@ -164,6 +173,7 @@ my-website/
 ## Tips
 
 - **Always dry-run before migrating** — the migration tool has a `--dry-run` flag
+- **Surveys have a dry-run too** — `create_survey.py --dry-run` prints the full payload before touching Odoo
 - **Claude reads workflows automatically** — ask it to design a page and it reads `design_page.md` first
 - **Everything is backed up** — before any destructive operation, tools save a backup to `.tmp/`
 - **Passwords stay local** — only in your `.env` file, which is never committed
