@@ -87,13 +87,15 @@ def wrap_arch(content, url, name):
         return content
     url_slug = url.strip("/").replace("/", "_") or "home"
     key = f"website.page_{url_slug}"
-    indented = "\n".join("    " + line for line in content.splitlines())
+    indented = "\n".join("      " + line for line in content.splitlines())
     safe_name = name.replace("'", "\\'")
     return (
         f'<t t-name="{key}">\n'
         f"  <t t-call=\"website.layout\">\n"
         f"    <t t-set=\"pageName\" t-value=\"'{safe_name}'\"/>\n"
+        f"    <div id=\"wrap\" class=\"oe_structure\">\n"
         f"{indented}\n"
+        f"    </div>\n"
         f"  </t>\n"
         f"</t>"
     )
