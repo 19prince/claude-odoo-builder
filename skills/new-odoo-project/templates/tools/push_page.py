@@ -23,7 +23,9 @@ from odoo_client import OdooClient
 QWEB_WRAPPER = """<t t-name="website.{key}">
   <t t-call="website.layout">
     <t t-set="pageName" t-value="'{name}'"/>
+    <div id="wrap" class="oe_structure">
 {content}
+    </div>
   </t>
 </t>"""
 

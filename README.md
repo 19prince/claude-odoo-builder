@@ -123,7 +123,7 @@ Log into your Odoo backend, open the website editor, and verify:
 - You can drag blocks onto the page
 - Text and image toolbars appear when clicking elements
 
-If blocks show orange warning icons, tell Claude — there's a quick fix (installing `theme_clean`).
+If blocks show orange warning icons, the page arch is missing `<div id="wrap" class="oe_structure">` inside the layout call. This is handled automatically by `push_page.py` — if you see it on an existing page, re-push the arch through the tool.
 
 ---
 
