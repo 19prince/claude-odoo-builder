@@ -23,6 +23,7 @@ MANIFEST = """\
     'category': 'Website',
     'depends': ['website'],
     'data': [
+        'security/ir.model.access.csv',
         'views/snippets.xml',
         'views/assets.xml',
     ],
@@ -38,7 +39,11 @@ MANIFEST = """\
 }}
 """
 
-INIT_PY = ""  # empty __init__.py
+ROOT_INIT_PY = "from . import models\n"
+
+MODELS_INIT_PY = ""  # populated when model files are added
+
+ACCESS_CSV = "id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink\n"
 
 SNIPPETS_XML = """\
 <?xml version="1.0" encoding="utf-8"?>
@@ -170,9 +175,13 @@ def scaffold(name, label, odoo_version, out_dir):
 
     files = {
         "__manifest__.py": MANIFEST.format(**ctx),
-        "__init__.py": INIT_PY,
+        "__init__.py": ROOT_INIT_PY,
+        "models/__init__.py": MODELS_INIT_PY,
         "views/snippets.xml": SNIPPETS_XML.format(**ctx),
         "views/assets.xml": ASSETS_XML.format(**ctx),
+        "security/ir.model.access.csv": ACCESS_CSV,
+        "data/.gitkeep": "",
+        "i18n/.gitkeep": "",
         "static/src/scss/snippet.scss": SNIPPET_SCSS.format(**ctx),
         "static/src/js/snippet.js": SNIPPET_JS.format(**ctx),
     }
@@ -187,9 +196,12 @@ def scaffold(name, label, odoo_version, out_dir):
     print(f"\nDone. Next steps:")
     print(f"  1. Customize .tmp/snippets/{name}/views/snippets.xml (HTML template)")
     print(f"  2. Add styles in .tmp/snippets/{name}/static/src/scss/snippet.scss")
-    print(f"  3. Copy the {name}/ folder to your Odoo server's custom addons path")
-    print(f"  4. In Odoo: Apps -> Update Apps List -> search '{name}' -> Install")
-    print(f"  5. Open Website Editor -> drag '{label}' from the snippet panel")
+    print(f"  3. Add models in .tmp/snippets/{name}/models/ and update models/__init__.py")
+    print(f"  4. If you add models, populate security/ir.model.access.csv with access rules")
+    print(f"  5. Copy the {name}/ folder to your Odoo server's custom addons path")
+    print(f"  6. In Odoo: Apps -> Update Apps List -> search '{name}' -> Install")
+    print(f"  7. Open Website Editor -> drag '{label}' from the snippet panel")
+    print(f"\nSee workflows/module_structure.md for full directory reference.")
 
 
 def main():
