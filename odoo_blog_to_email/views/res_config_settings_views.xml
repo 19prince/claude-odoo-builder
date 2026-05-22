@@ -5,48 +5,21 @@
         <field name="model">res.config.settings</field>
         <field name="inherit_id" ref="mass_mailing.res_config_settings_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//div[hasclass('o_settings_container')]" position="before">
-                <div class="app_settings_block">
-                    <h2>Odoo Blog to Email</h2>
-                    <div class="row mt16 o_settings_container">
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_left_pane"/>
-                            <div class="o_setting_right_pane">
-                                <label for="auto_mailing_id" string="Welcome mailing"/>
-                                <div class="text-muted">
-                                    Mailing to refresh when a tagged blog post is published.
-                                </div>
-                                <div class="content-group mt8">
-                                    <field name="auto_mailing_id" options="{'no_create': True}"/>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_left_pane"/>
-                            <div class="o_setting_right_pane">
-                                <label for="auto_mailing_tag" string="Blog tag"/>
-                                <div class="text-muted">
-                                    Tag name to watch (case-insensitive). Default: Newsletter.
-                                </div>
-                                <div class="content-group mt8">
-                                    <field name="auto_mailing_tag"/>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_left_pane"/>
-                            <div class="o_setting_right_pane">
-                                <label for="auto_mailing_post_count" string="Number of posts"/>
-                                <div class="text-muted">
-                                    How many recent posts to inject into the mailing.
-                                </div>
-                                <div class="content-group mt8">
-                                    <field name="auto_mailing_post_count"/>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <xpath expr="//app[@name='mass_mailing']" position="inside">
+                <block title="Odoo Blog to Email" name="obte_settings_container">
+                    <setting string="Welcome mailing"
+                             help="Mailing to refresh when a tagged blog post is published.">
+                        <field name="auto_mailing_id" options="{'no_create': True}"/>
+                    </setting>
+                    <setting string="Blog tag"
+                             help="Tag name to watch (case-insensitive). Default: Newsletter.">
+                        <field name="auto_mailing_tag"/>
+                    </setting>
+                    <setting string="Number of posts"
+                             help="How many recent posts to inject into the mailing.">
+                        <field name="auto_mailing_post_count"/>
+                    </setting>
+                </block>
             </xpath>
         </field>
     </record>

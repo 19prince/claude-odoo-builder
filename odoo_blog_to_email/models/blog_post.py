@@ -8,7 +8,6 @@ _logger = logging.getLogger(__name__)
 
 SLOT_START = '<!-- BLOG_POSTS_SLOT:START -->'
 SLOT_END   = '<!-- BLOG_POSTS_SLOT:END -->'
-WEBSITE_BASE = 'https://www.19prince.com'
 
 MONO = "'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace"
 SANS = "'Inter Tight', -apple-system, BlinkMacSystemFont, system-ui, sans-serif"
@@ -31,12 +30,12 @@ def _clean_teaser(raw, title):
     text = re.sub(r'^TL;DR\s*', '', text, flags=re.IGNORECASE).strip()
     if len(text) > 160:
         text = text[:160].rsplit(' ', 1)[0] + '...'
-    return text or 'Read the full post on the 19 Prince blog.'
+    return text or 'Read the full post on the blog.'
 
 
-def _render_slot(index, title, teaser, url, is_last, labels):
+def _render_slot(index, title, teaser, url, is_last, labels, base_url):
     label = labels[index] if index < len(labels) else f'{index + 1:02d} &nbsp;&middot;&nbsp; RECENT'
-    full_url = WEBSITE_BASE + url
+    safe_url = html.escape(base_url.rstrip('/') + url)
 
     if is_last:
         cell_style = 'padding-top: 24px;'
@@ -55,20 +54,20 @@ def _render_slot(index, title, teaser, url, is_last, labels):
         f'                    <p style="font-family: {MONO}; font-size: 10px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: #a9b3c2; margin: 0 0 8px 0;">{label}</p>\n'
         f'                    <p style="font-family: {SANS}; font-weight: 700; font-size: 18px; line-height: 1.2; letter-spacing: -0.02em; color: #071222; margin: 0 0 8px 0;">{safe_title}</p>\n'
         f'                    <p style="font-family: {SANS}; font-weight: 400; font-size: 14px; line-height: 1.55; color: #525c6d; margin: 0 0 12px 0;">{safe_teaser}</p>\n'
-        f'                    <a href="{full_url}" style="font-family: {SANS}; font-size: 13px; font-weight: 600; color: #EA6C08; text-decoration: none; letter-spacing: -0.01em;">Read &#8594;</a>\n'
+        f'                    <a href="{safe_url}" style="font-family: {SANS}; font-size: 13px; font-weight: 600; color: #EA6C08; text-decoration: none; letter-spacing: -0.01em;">Read &#8594;</a>\n'
         f'                </td>\n'
         f'            </tr>\n'
         f'        </table>\n'
     )
 
 
-def _build_posts_block(posts):
+def _build_posts_block(posts, base_url):
     slots = []
     for i, post in enumerate(posts):
         title  = post.get('name') or ''
         teaser = _clean_teaser(post.get('teaser') or '', title)
         url    = post.get('website_url') or '/'
-        slots.append(_render_slot(i, title, teaser, url, is_last=(i == len(posts) - 1), labels=LABELS))
+        slots.append(_render_slot(i, title, teaser, url, is_last=(i == len(posts) - 1), labels=LABELS, base_url=base_url))
 
     inner = '\n'.join(slots)
     return (
@@ -98,7 +97,7 @@ class BlogPost(models.Model):
             return result
 
         get_param = self.env['ir.config_parameter'].sudo().get_param
-        tag_name = (get_param('19prince.auto_mailing_tag') or 'Newsletter').lower()
+        tag_name = (get_param('odoo_blog_to_email.auto_mailing_tag') or 'Newsletter').lower()
 
         for rec in self:
             just_published = (
@@ -117,7 +116,7 @@ class BlogPost(models.Model):
     def _refresh_auto_mailing(self):
         get_param = self.env['ir.config_parameter'].sudo().get_param
 
-        mailing_id_str = get_param('19prince.auto_mailing_id')
+        mailing_id_str = get_param('odoo_blog_to_email.auto_mailing_id')
         if not mailing_id_str:
             _logger.warning('odoo_blog_to_email: auto_mailing_id not configured — skipping refresh')
             return
@@ -128,11 +127,12 @@ class BlogPost(models.Model):
             _logger.warning('odoo_blog_to_email: invalid auto_mailing_id %r — skipping', mailing_id_str)
             return
 
-        post_count = int(get_param('19prince.auto_mailing_post_count') or 3)
-        tag_name   = (get_param('19prince.auto_mailing_tag') or 'Newsletter').lower()
+        post_count = int(get_param('odoo_blog_to_email.auto_mailing_post_count') or 3)
+        tag_name   = (get_param('odoo_blog_to_email.auto_mailing_tag') or 'Newsletter').lower()
+        base_url   = (get_param('web.base.url') or '').rstrip('/')
 
         posts = self.env['blog.post'].sudo().search_read(
-            [('is_published', '=', True), ('tag_ids.name', 'ilike', tag_name)],
+            [('is_published', '=', True), ('tag_ids.name', '=ilike', tag_name)],
             ['name', 'teaser', 'post_date', 'website_url'],
             order='post_date desc',
             limit=post_count,
@@ -155,7 +155,7 @@ class BlogPost(models.Model):
             )
             return
 
-        posts_block = _build_posts_block(posts)
+        posts_block = _build_posts_block(posts, base_url)
         new_body = re.sub(
             r'<!-- BLOG_POSTS_SLOT:START -->.*?<!-- BLOG_POSTS_SLOT:END -->',
             f'{SLOT_START}\n{posts_block}\n{SLOT_END}',
