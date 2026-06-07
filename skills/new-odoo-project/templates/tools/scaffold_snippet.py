@@ -9,6 +9,7 @@ Output: .tmp/snippets/{name}/ — a full installable Odoo module
 """
 
 import argparse
+import html
 import os
 import sys
 import textwrap
@@ -172,13 +173,14 @@ def write_file(path, content):
 def scaffold(name, label, odoo_version, out_dir):
     class_name = to_class_name(name)
     ctx = {"name": name, "label": label, "class_name": class_name}
+    xml_ctx = {"name": name, "label": html.escape(label), "class_name": class_name}
 
     files = {
         "__manifest__.py": MANIFEST.format(**ctx),
         "__init__.py": ROOT_INIT_PY,
         "models/__init__.py": MODELS_INIT_PY,
-        "views/snippets.xml": SNIPPETS_XML.format(**ctx),
-        "views/assets.xml": ASSETS_XML.format(**ctx),
+        "views/snippets.xml": SNIPPETS_XML.format(**xml_ctx),
+        "views/assets.xml": ASSETS_XML.format(**xml_ctx),
         "security/ir.model.access.csv": ACCESS_CSV,
         "data/.gitkeep": "",
         "i18n/.gitkeep": "",

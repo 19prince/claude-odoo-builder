@@ -204,6 +204,17 @@ def backup_state(client):
 # Rollback
 # ---------------------------------------------------------------------------
 
+def _safe_arch_path(arch_file, backup_dir):
+    """Raise ValueError if arch_file resolves outside backup_dir."""
+    real_backup = os.path.realpath(backup_dir)
+    real_arch = os.path.realpath(arch_file)
+    if real_arch != real_backup and not real_arch.startswith(real_backup + os.sep):
+        raise ValueError(
+            f"Unsafe arch_file path {arch_file!r} is outside backup directory {backup_dir!r}"
+        )
+    return real_arch
+
+
 def rollback(client, backup_dir):
     """Restore production to the state captured in a backup directory."""
     manifest_path = os.path.join(backup_dir, "manifest.json")
@@ -227,6 +238,10 @@ def rollback(client, backup_dir):
             if not arch_file or not os.path.exists(arch_file):
                 print(f"  SKIP restore view {key!r} — arch file missing")
                 continue
+            try:
+                arch_file = _safe_arch_path(arch_file, backup_dir)
+            except ValueError as e:
+                sys.exit(f"ERROR: {e}")
             with open(arch_file, "r", encoding="utf-8") as f:
                 arch = f.read()
             # Find the view's current ID on production (may differ from backup if recreated)
@@ -254,6 +269,10 @@ def rollback(client, backup_dir):
         if not arch_file or not os.path.exists(arch_file):
             print(f"  SKIP restore page {url} — arch file missing")
             continue
+        try:
+            arch_file = _safe_arch_path(arch_file, backup_dir)
+        except ValueError as e:
+            sys.exit(f"ERROR: {e}")
         with open(arch_file, "r", encoding="utf-8") as f:
             arch = f.read()
         client.write("ir.ui.view", [view_id], {"arch": arch})

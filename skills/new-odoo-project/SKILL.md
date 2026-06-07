@@ -34,6 +34,7 @@ Ask the user for the following in a single message. Do not proceed until you hav
 6. **Is this a production-only server, or is there a separate staging instance?**
    - If staging + production: collect both URLs and DB names (but NOT passwords)
    - If production only: note that changes go live immediately — extra caution required
+7. **GitHub repo linked to the Odoo.sh project** — e.g. `https://github.com/org/repo`. This is the repository Odoo.sh watches for deployments. Custom modules are added here as submodules. If the project is not hosted on Odoo.sh, answer "N/A".
 
 Do NOT ask for any passwords. Tell the user: "I'll leave the password fields blank in `.env` — fill those in yourself before running any tools."
 
@@ -168,6 +169,7 @@ workflows/  # Markdown SOPs
 
 - **Server:** {odoo_url}
 - **DB:** {odoo_db}
+- **GitHub repo:** {github_repo_url}
 - **Brand colors:** TBD
 - **Brand fonts:** TBD
 - **Design direction:** TBD
@@ -180,6 +182,7 @@ workflows/  # Markdown SOPs
 - `workflows/design_page.md` — designing and building pages
 - `workflows/push_to_odoo.md` — pushing content to Odoo
 - `workflows/create_mailing.md` — formatting and pushing email mailings
+- `workflows/design_survey.md` — designing and creating Odoo surveys
 - `workflows/css_theming.md` — CSS injection pattern
 - `workflows/migrate_staging_to_prod.md` — staging → production migration
 
