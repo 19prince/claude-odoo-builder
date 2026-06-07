@@ -1,4 +1,37 @@
+# Secrets
 .env
-.tmp/
+*.env
+*.secret
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+.python-version
+.tmp/
+
+# OS
+.DS_Store
+
+# Claude / tooling
+.claude/
+docs/superpowers/
+
+# Media and data exports
+*.mp4
+*.mov
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.svg
+*.csv
+
+# Design scratch folders
+19 Prince Design System/
+design_handoff_homepage/
+editor_tldr_style/
+
+# Loose content/draft files at repo root (not source)
+ai-odoo-rubric-*.md
