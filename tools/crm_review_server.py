@@ -155,20 +155,80 @@ def _post_direct_message(client, model, res_id, html_body):
     client.create("mail.message", values)
 
 
-def process_decisions(data, decisions, pushed_set):
+def _apply_state_change(client, item, decision, extra_notes=""):
+    """Apply one state-change decision to crm.lead and post an audit note.
+
+    decision is 'stage:<Name>' or 'promote'. Returns True if a write happened,
+    False if it was an idempotent no-op. Re-reads the record first so a re-push
+    (or a move already done in Odoo) is a safe no-op.
+    """
+    record_id = item.get("record_id")
+    if not record_id:
+        raise RuntimeError(f"No record id for state change {item.get('record_name')!r}")
+
+    recs = client.read("crm.lead", [record_id], ["stage_id", "type"])
+    if not recs:
+        raise RuntimeError(f"crm.lead #{record_id} not found")
+    rec = recs[0]
+    cur_stage = rec["stage_id"][1] if rec.get("stage_id") else ""
+    cur_type = rec.get("type")
+
+    today = datetime.date.today().isoformat()
+
+    if decision == "promote":
+        if cur_type == "opportunity":
+            print(f"  SKIP (already opportunity): #{record_id}")
+            return False
+        vals = {"type": "opportunity"}
+        if not rec.get("stage_id"):
+            sid = _get_stage_id(client, "New")
+            if sid:
+                vals["stage_id"] = sid
+        client.write("crm.lead", [record_id], vals)
+        audit = f"Promoted lead&rarr;opportunity via CRM sync {today}"
+    elif decision.startswith("stage:"):
+        target_name = decision.split(":", 1)[1]
+        if cur_stage.lower() == target_name.lower():
+            print(f"  SKIP (already at {target_name}): #{record_id}")
+            return False
+        sid = _get_stage_id(client, target_name)
+        if not sid:
+            raise RuntimeError(f"Stage {target_name!r} not found in crm.stage")
+        client.write("crm.lead", [record_id], {"stage_id": sid})
+        audit = f"Stage {_h(cur_stage or '—')}&rarr;{_h(target_name)} via CRM sync {today}"
+    else:
+        raise RuntimeError(f"Unknown state_change decision {decision!r}")
+
+    parts = [audit]
+    if item.get("evidence"):
+        parts.append(f'evidence: "{_h(item["evidence"])}"')
+    if item.get("source"):
+        parts.append(f"source: {_h(item['source'])}")
+    if extra_notes:
+        parts.append(f"reviewer: {_h(extra_notes)}")
+    _post_direct_message(client, "crm.lead", record_id, " &mdash; ".join(parts))
+    print(f"  State change on #{record_id}: {decision}")
+    return True
+
+
+def process_decisions(data, decisions, pushed_set, client=None):
     """Push approved decisions to Odoo. Skips items already in pushed_set."""
     new_leads = data.get("new_leads") or []
     chatter_notes = data.get("chatter_notes") or []
     transcript_notes = data.get("transcript_notes") or []
+    state_changes = data.get("state_changes") or []
     leads_created = 0
     notes_posted = 0
+    stages_changed = 0
     errors = []
     skipped = 0
 
-    try:
-        client = OdooClient()
-    except SystemExit as e:
-        return {"leads_created": 0, "contacts_created": 0, "notes_posted": 0, "errors": [str(e)]}
+    if client is None:
+        try:
+            client = OdooClient()
+        except SystemExit as e:
+            return {"leads_created": 0, "contacts_created": 0, "notes_posted": 0,
+                    "stages_changed": 0, "errors": [str(e)]}
 
     contacts_created = 0
 
@@ -273,6 +333,12 @@ def process_decisions(data, decisions, pushed_set):
                     notes_posted += 1
                     print(f"  Created lead #{lead_id} and posted transcript: {title!r}")
 
+            elif dtype == "state_change" and isinstance(idx, int) and 0 <= idx < len(state_changes):
+                item = state_changes[idx]
+                if _apply_state_change(client, item, decision, extra_notes):
+                    pushed_set.add(key)
+                    stages_changed += 1
+
         except RuntimeError as e:
             errors.append(str(e))
             print(f"  ERROR: {e}")
@@ -280,7 +346,9 @@ def process_decisions(data, decisions, pushed_set):
     if skipped:
         print(f"  Skipped {skipped} already-pushed item(s).")
 
-    return {"leads_created": leads_created, "contacts_created": contacts_created, "notes_posted": notes_posted, "errors": errors}
+    return {"leads_created": leads_created, "contacts_created": contacts_created,
+            "notes_posted": notes_posted, "stages_changed": stages_changed,
+            "errors": errors}
 
 
 # ── HTML rendering ────────────────────────────────────────────────────────────

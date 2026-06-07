@@ -109,5 +109,61 @@ class TestDropdown(unittest.TestCase):
         self.assertIn('value="stage:Partner-Holding"', html)
 
 
+class TestApply(unittest.TestCase):
+    def _item(self, **kw):
+        base = dict(model="crm.lead", record_id=95,
+                    record_name="Timberroot opp", current_stage="Qualified",
+                    change_type="stage", suggested_stage="Won",
+                    evidence="they signed the SOW", source="Gmail 2026-05-28")
+        base.update(kw)
+        return base
+
+    def test_stage_move_writes_and_posts_audit(self):
+        c = FakeClient({"id": 95, "stage_id": [2, "Qualified"], "type": "opportunity"})
+        applied = srv._apply_state_change(c, self._item(), "stage:Won")
+        self.assertTrue(applied)
+        self.assertEqual(c.writes, [("crm.lead", [95], {"stage_id": 4})])
+        self.assertEqual(len(c.messages), 1)
+        body = c.messages[0]["body"]
+        self.assertIn("Qualified", body)
+        self.assertIn("Won", body)
+        self.assertIn("they signed the SOW", body)
+
+    def test_idempotent_noop_when_already_at_target(self):
+        c = FakeClient({"id": 95, "stage_id": [4, "Won"], "type": "opportunity"})
+        applied = srv._apply_state_change(c, self._item(), "stage:Won")
+        self.assertFalse(applied)
+        self.assertEqual(c.writes, [])
+        self.assertEqual(c.messages, [])
+
+    def test_promote_flips_type_and_posts_audit(self):
+        c = FakeClient({"id": 70, "stage_id": False, "type": "lead"})
+        item = self._item(record_id=70, change_type="promote", suggested_stage=None)
+        applied = srv._apply_state_change(c, item, "promote")
+        self.assertTrue(applied)
+        # type flip + stage New because it had no real stage
+        self.assertEqual(c.writes[0][0], "crm.lead")
+        vals = c.writes[0][2]
+        self.assertEqual(vals["type"], "opportunity")
+        self.assertEqual(vals["stage_id"], 1)
+        self.assertIn("lead", c.messages[0]["body"].lower())
+
+    def test_promote_noop_when_already_opportunity(self):
+        c = FakeClient({"id": 70, "stage_id": [2, "Qualified"], "type": "opportunity"})
+        item = self._item(record_id=70, change_type="promote", suggested_stage=None)
+        applied = srv._apply_state_change(c, item, "promote")
+        self.assertFalse(applied)
+        self.assertEqual(c.writes, [])
+
+    def test_process_decisions_routes_state_change(self):
+        c = FakeClient({"id": 95, "stage_id": [2, "Qualified"], "type": "opportunity"})
+        data = {"state_changes": [self._item()]}
+        decisions = [{"type": "state_change", "index": 0, "decision": "stage:Won", "notes": ""}]
+        pushed = set()
+        result = srv.process_decisions(data, decisions, pushed, client=c)
+        self.assertEqual(result["stages_changed"], 1)
+        self.assertIn(("state_change", 0), pushed)
+
+
 if __name__ == "__main__":
     unittest.main()
