@@ -577,6 +577,48 @@ def render_html(data):
 <tbody>{transcript_rows}</tbody>
 </table>"""
 
+    # State-change rows
+    state_changes = data.get("state_changes") or []
+    state_rows = ""
+    for i, item in enumerate(state_changes):
+        record_name = _h(item.get("record_name", f"#{item.get('record_id')}"))
+        record_id = _h(item.get("record_id", ""))
+        current_stage = _h(item.get("current_stage", ""))
+        evidence = _h(item.get("evidence", ""))
+        source = _h(item.get("source", ""))
+        confidence = item.get("confidence", "uncertain")
+        change_type = item.get("change_type", "stage")
+        suggested_stage = item.get("suggested_stage")
+        current_type = item.get("current_type", "opportunity" if change_type == "stage" else "lead")
+        row_class = ' class="uncertain"' if confidence == "uncertain" else ""
+        dd = _state_change_dropdown(i, change_type, suggested_stage, confidence, current_type)
+        state_rows += (
+            f"<tr{row_class}>"
+            f"<td><strong>{record_name}</strong><br><small>#{record_id}</small></td>"
+            f"<td>{current_stage}</td>"
+            f"<td class='preview'>{evidence}</td>"
+            f"<td><small>{source}</small></td>"
+            f"<td>{dd}</td>"
+            f"<td>{_notes_field('state_change', i)}</td>"
+            "</tr>"
+        )
+
+    state_section = ""
+    if state_changes:
+        state_section = f"""
+<h2>Record State Changes <span class="count">({len(state_changes)})</span></h2>
+<table>
+<thead><tr>
+  <th style="width:20%">Record</th>
+  <th style="width:11%">Current Stage</th>
+  <th>Evidence</th>
+  <th style="width:14%">Source</th>
+  <th style="width:15%">Decision</th>
+  <th style="width:14%">Your Notes</th>
+</tr></thead>
+<tbody>{state_rows}</tbody>
+</table>"""
+
     # Full page — CSS braces and JS braces must be doubled in f-string
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -636,6 +678,7 @@ ul.summary-bullets {{ margin: 0; padding-left: 16px; font-size: 0.81rem; color: 
 {leads_section}
 {notes_section}
 {transcript_section}
+{state_section}
 
 <div class="action-bar">
   <button id="push-btn" onclick="pushToOdoo()">Push to Odoo</button>
@@ -699,6 +742,7 @@ function pushToOdoo() {{
       if (data.leads_created) parts.push('Leads created: ' + data.leads_created);
       if (data.contacts_created) parts.push('Contacts created: ' + data.contacts_created);
       if (data.notes_posted) parts.push('Notes posted: ' + data.notes_posted);
+      if (data.stages_changed) parts.push('Stages changed: ' + data.stages_changed);
       result.innerHTML = '✓ <strong>Done.</strong> &nbsp;' + (parts.join(' &nbsp;·&nbsp; ') || 'Nothing new pushed.');
       lockForm();
     }}
@@ -761,6 +805,8 @@ def _label_for(data, dtype, idx):
             return item.get("lead_name") or f"lead #{item.get('lead_id')}"
         if dtype == "transcript_note":
             return (data.get("transcript_notes") or [])[idx].get("title", "")
+        if dtype == "state_change":
+            return (data.get("state_changes") or [])[idx].get("record_name", "")
     except (IndexError, AttributeError):
         pass
     return f"{dtype}[{idx}]"

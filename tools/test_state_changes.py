@@ -165,5 +165,31 @@ class TestApply(unittest.TestCase):
         self.assertIn(("state_change", 0), pushed)
 
 
+class TestRender(unittest.TestCase):
+    def test_state_changes_section_renders(self):
+        data = {
+            "period_start": "2026-04-01", "period_end": "2026-06-06",
+            "generated": "2026-06-06",
+            "state_changes": [{
+                "model": "crm.lead", "record_id": 95,
+                "record_name": "Timberroot opp", "current_stage": "Qualified",
+                "change_type": "stage", "suggested_stage": "Won",
+                "evidence": "they signed", "source": "Gmail",
+                "confidence": "certain", "approved": False,
+            }],
+        }
+        html = srv.render_html(data)
+        self.assertIn("Record State Changes", html)
+        self.assertIn("Timberroot opp", html)
+        self.assertIn("they signed", html)
+        # Won is certain -> must NOT be pre-selected
+        self.assertIn('value="skip" selected', html)
+        self.assertNotIn('value="stage:Won" selected', html)
+
+    def test_label_for_state_change(self):
+        data = {"state_changes": [{"record_name": "Timberroot opp"}]}
+        self.assertEqual(srv._label_for(data, "state_change", 0), "Timberroot opp")
+
+
 if __name__ == "__main__":
     unittest.main()
