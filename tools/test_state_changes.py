@@ -63,5 +63,51 @@ class TestImports(unittest.TestCase):
         self.assertTrue(hasattr(srv, "_apply_state_change"))
 
 
+class TestDropdown(unittest.TestCase):
+    def test_forward_move_preselected_when_certain(self):
+        html = srv._state_change_dropdown(
+            0, change_type="stage", suggested_stage="Qualified",
+            confidence="certain", current_type="opportunity")
+        self.assertIn('value="stage:Qualified" selected', html)
+
+    def test_won_never_preselected_even_when_certain(self):
+        html = srv._state_change_dropdown(
+            1, change_type="stage", suggested_stage="Won",
+            confidence="certain", current_type="opportunity")
+        self.assertIn('value="skip" selected', html)
+        self.assertNotIn('value="stage:Won" selected', html)
+        self.assertIn('value="stage:Won"', html)  # option still present
+
+    def test_lost_never_preselected_even_when_certain(self):
+        html = srv._state_change_dropdown(
+            2, change_type="stage", suggested_stage="Lost",
+            confidence="certain", current_type="opportunity")
+        self.assertIn('value="skip" selected', html)
+        self.assertNotIn('value="stage:Lost" selected', html)
+
+    def test_uncertain_defaults_to_no_change(self):
+        html = srv._state_change_dropdown(
+            3, change_type="stage", suggested_stage="Qualified",
+            confidence="uncertain", current_type="opportunity")
+        self.assertIn('value="skip" selected', html)
+
+    def test_promote_option_only_for_leads(self):
+        as_lead = srv._state_change_dropdown(
+            4, change_type="promote", suggested_stage=None,
+            confidence="certain", current_type="lead")
+        self.assertIn('value="promote" selected', as_lead)
+        as_opp = srv._state_change_dropdown(
+            5, change_type="stage", suggested_stage="Qualified",
+            confidence="uncertain", current_type="opportunity")
+        self.assertNotIn('value="promote"', as_opp)
+
+    def test_suggested_stage_always_in_options(self):
+        # even an off-list stage name must appear so preselect can target it
+        html = srv._state_change_dropdown(
+            6, change_type="stage", suggested_stage="Partner-Holding",
+            confidence="uncertain", current_type="opportunity")
+        self.assertIn('value="stage:Partner-Holding"', html)
+
+
 if __name__ == "__main__":
     unittest.main()

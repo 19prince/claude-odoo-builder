@@ -348,6 +348,42 @@ def _transcript_dropdown(index, suggested_type=None, confidence=None, has_id=Tru
     return f'<select class="decision" data-type="transcript_note" data-index="{index}">{options}</select>'
 
 
+# Move targets offered in the state-change dropdown (New is the start, rarely a
+# target). Stage ids are resolved at push time via _get_stage_id (never hardcoded).
+REACHABLE_STAGES = ["Qualified", "On Hold", "Won", "Lost"]
+
+
+def _state_change_dropdown(index, change_type, suggested_stage, confidence, current_type):
+    """Build the per-row dropdown for a state change.
+
+    Pre-select the suggestion only when confidence == 'certain' AND the move is
+    not Won/Lost (those are high-impact and always require an explicit pick).
+    Promotion is offered only when the record is currently a lead.
+    """
+    stages = list(REACHABLE_STAGES)
+    if suggested_stage and suggested_stage not in stages:
+        stages.append(suggested_stage)
+
+    opts = [("skip", "No change")]
+    for s in stages:
+        opts.append((f"stage:{s}", f"Move to {s}"))
+    if current_type == "lead":
+        opts.append(("promote", "Promote to Opportunity"))
+
+    preselect = "skip"
+    if confidence == "certain":
+        if change_type == "stage" and suggested_stage and suggested_stage not in ("Won", "Lost"):
+            preselect = f"stage:{suggested_stage}"
+        elif change_type == "promote":
+            preselect = "promote"
+
+    options = "".join(
+        f'<option value="{html.escape(v)}"{" selected" if v == preselect else ""}>{html.escape(label)}</option>'
+        for v, label in opts
+    )
+    return f'<select class="decision" data-type="state_change" data-index="{index}">{options}</select>'
+
+
 def _build_transcript_html(item):
     meeting_date = html.escape(str(item.get("meeting_date", "") or ""))
     summary = item.get("summary") or []
