@@ -17,13 +17,16 @@ import os
 import re
 import sys
 
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
+
 sys.path.insert(0, os.path.dirname(__file__))
 from odoo_client import OdooClient
 
 TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "..", ".tmp", "welcome_email.html")
 SLOT_START    = "<!-- BLOG_POSTS_SLOT:START -->"
 SLOT_END      = "<!-- BLOG_POSTS_SLOT:END -->"
-WEBSITE_BASE  = "https://www.19prince.com"
+WEBSITE_BASE  = (os.getenv("WEBSITE_BASE") or os.getenv("ODOO_URL", "")).rstrip("/")
 LABELS        = ["01 &nbsp;&middot;&nbsp; LATEST", "02 &nbsp;&middot;&nbsp; PREVIOUS", "03 &nbsp;&middot;&nbsp; EARLIER"]
 
 MONO  = "'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace"
@@ -104,13 +107,16 @@ def build_posts_block(posts: list) -> str:
 
 def main():
     parser = argparse.ArgumentParser(description="Refresh welcome mailing with latest blog posts")
-    parser.add_argument('--mailing-id', type=int, default=23, dest='mailing_id',
-                        help='Odoo mailing ID to update (default: 23)')
+    parser.add_argument('--mailing-id', type=int, required=True, dest='mailing_id',
+                        help='Odoo mailing ID to update')
     parser.add_argument('--limit', type=int, default=3,
                         help='Number of posts to include (default: 3)')
     parser.add_argument('--dry-run', action='store_true',
                         help='Print rendered HTML without pushing to Odoo')
     args = parser.parse_args()
+
+    if not WEBSITE_BASE:
+        sys.exit("ERROR: Set WEBSITE_BASE or ODOO_URL in .env so blog post links resolve correctly.")
 
     # Load base template
     if not os.path.exists(TEMPLATE_PATH):
