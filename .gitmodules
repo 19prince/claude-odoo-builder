@@ -1,0 +1,3 @@
+[submodule "mail_message_edit"]
+	path = mail_message_edit
+	url = https://github.com/19prince/odoo-chatter-edit.git
