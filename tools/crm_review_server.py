@@ -77,6 +77,19 @@ def _create_lead(client, lead, extra_notes=""):
     return client.create("crm.lead", values)
 
 
+def markdown_bullets_to_html(text):
+    """Convert markdown bullet list to <p> tags, newest-first (mirrors push_crm_updates.py)."""
+    lines = reversed(text.strip().splitlines())
+    items = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("- "):
+            items.append(f"<p>• {stripped[2:]}</p>")
+        elif stripped:
+            items.append(f"<p>{stripped}</p>")
+    return "".join(items)
+
+
 def _post_chatter_note(client, item, extra_notes=""):
     lead_id = item.get("lead_id")
     note = item.get("note", "")
@@ -84,12 +97,8 @@ def _post_chatter_note(client, item, extra_notes=""):
     if extra_notes:
         note = note.rstrip() + "\n\nReviewer notes: " + extra_notes
 
-    client._execute_kw(
-        "crm.lead",
-        "message_post",
-        [[lead_id]],
-        {"body": note, "subtype_xmlid": "mail.mt_note"},
-    )
+    html_body = markdown_bullets_to_html(note)
+    _post_direct_message(client, "crm.lead", lead_id, html_body)
 
 
 def _find_or_create_partner(client, email, name=None, company=None):
@@ -111,12 +120,8 @@ def _post_partner_note(client, partner_id, note, extra_notes=""):
     """Post a chatter note on a res.partner record."""
     if extra_notes:
         note = note.rstrip() + "\n\nReviewer notes: " + extra_notes
-    client._execute_kw(
-        "res.partner",
-        "message_post",
-        [[partner_id]],
-        {"body": note, "subtype_xmlid": "mail.mt_note"},
-    )
+    html_body = markdown_bullets_to_html(note)
+    _post_direct_message(client, "res.partner", partner_id, html_body)
 
 
 def _resolve_partner_for_lead(client, lead_id):
@@ -133,8 +138,14 @@ def _resolve_partner_for_lead(client, lead_id):
     return _find_or_create_partner(client, email)
 
 
-def _post_direct_message(client, model, res_id, html_body):
-    """Create mail.message directly — avoids HTML escaping that message_post causes."""
+def _post_direct_message(client, model, res_id, html_body, meeting_date=None):
+    """Create mail.message directly — avoids HTML escaping that message_post causes.
+
+    meeting_date is accepted for API compatibility but NOT used to set message.date.
+    Odoo sorts chatter by create_date (set by ORM, cannot be overridden via API), so
+    backdating via message.date only produces a misleading timestamp without placing the
+    note in chronological order. The meeting date already appears in the body content.
+    """
     subtypes = client.search_read(
         "mail.message.subtype", [("name", "=", "Note")], ["id"], limit=1
     )
@@ -305,17 +316,30 @@ def process_decisions(data, decisions, pushed_set, client=None):
                 if decision in ("lead", "opportunity"):
                     if not target_id:
                         raise RuntimeError(f"No target id for transcript {title!r}")
-                    _post_direct_message(client, "crm.lead", target_id, html_body)
+                    _post_direct_message(client, "crm.lead", target_id, html_body, meeting_date)
                     pushed_set.add(key)
                     notes_posted += 1
                     print(f"  Posted transcript on lead #{target_id} ({target.get('name')!r}): {title!r}")
                 elif decision == "contact":
-                    if not target_id:
-                        raise RuntimeError(f"No target id for transcript {title!r}")
-                    _post_direct_message(client, "res.partner", target_id, html_body)
+                    target_yaml_type = target.get("type", "")
+                    if target_yaml_type in ("lead", "opportunity"):
+                        # target_id is a crm.lead ID — resolve the linked partner
+                        lead_data = client.search_read(
+                            "crm.lead", [("id", "=", target_id)], ["partner_id"], limit=1
+                        )
+                        if not lead_data or not lead_data[0].get("partner_id"):
+                            raise RuntimeError(
+                                f"Lead/opp #{target_id} has no linked partner — cannot post to contact"
+                            )
+                        partner_id = lead_data[0]["partner_id"][0]
+                    else:
+                        if not target_id:
+                            raise RuntimeError(f"No target id for transcript {title!r}")
+                        partner_id = target_id
+                    _post_direct_message(client, "res.partner", partner_id, html_body, meeting_date)
                     pushed_set.add(key)
                     notes_posted += 1
-                    print(f"  Posted transcript on contact #{target_id}: {title!r}")
+                    print(f"  Posted transcript on contact #{partner_id} ({target_yaml_type} #{target_id}): {title!r}")
                 elif decision == "new_lead":
                     stage_id = _get_stage_id(client)
                     vals = {
@@ -327,7 +351,7 @@ def process_decisions(data, decisions, pushed_set, client=None):
                     if stage_id:
                         vals["stage_id"] = stage_id
                     lead_id = client.create("crm.lead", vals)
-                    _post_direct_message(client, "crm.lead", lead_id, html_body)
+                    _post_direct_message(client, "crm.lead", lead_id, html_body, meeting_date)
                     pushed_set.add(key)
                     leads_created += 1
                     notes_posted += 1
