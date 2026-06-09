@@ -186,6 +186,9 @@ def push_transcript_note(client, item, dry_run):
         }
         if author_id:
             values["author_id"] = author_id
+        # meeting_date intentionally NOT set on message.date — Odoo sorts chatter by
+        # create_date (ORM-controlled, not settable via API), so backdating only produces
+        # a misleading timestamp without achieving chronological placement.
         client.create("mail.message", values)
 
     if target_type == "new_lead":
