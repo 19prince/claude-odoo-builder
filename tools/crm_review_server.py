@@ -505,7 +505,7 @@ def render_html(data):
             "<tr>"
             f"<td><strong>{_h(lead.get('company', ''))}</strong></td>"
             f"<td>{_h(lead.get('email', ''))}</td>"
-            f"<td class='preview'>{_h(_truncate(lead.get('notes', '')))}</td>"
+            f"<td class='preview'>{markdown_bullets_to_html(lead.get('notes', ''))}</td>"
             f"<td>{_dropdown('new_lead', i)}</td>"
             f"<td>{_notes_field('new_lead', i)}</td>"
             "</tr>"
@@ -534,7 +534,7 @@ def render_html(data):
         notes_rows += (
             "<tr>"
             f"<td><strong>{lead_label}</strong><br><small>#{lead_id_label}</small></td>"
-            f"<td class='preview'>{_h(_truncate(item.get('note', '')))}</td>"
+            f"<td class='preview'>{markdown_bullets_to_html(item.get('note', ''))}</td>"
             f"<td>{_dropdown('chatter_note', i)}</td>"
             f"<td>{_notes_field('chatter_note', i)}</td>"
             "</tr>"
