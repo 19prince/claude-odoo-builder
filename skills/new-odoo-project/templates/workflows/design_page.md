@@ -92,6 +92,28 @@ python3 tools/validate_html.py --input .tmp/draft_{slug}.html
 - Review WARNINGs — at minimum, ensure `o_editable` is present on all text blocks
 - Re-run until you get: `Validation PASSED`
 
+**Also run an XML validity check** — `validate_html.py` uses an HTML parser and will pass files with invalid XML (e.g. `<img>` instead of `<img/>`). Odoo's QWeb engine parses arch as XML and will reject void elements that aren't self-closed:
+
+```bash
+python3 -c "
+import re, sys
+with open('.tmp/draft_{slug}.html') as f:
+    html = f.read()
+# Auto-fix void elements to be self-closing before checking
+for tag in ['img', 'br', 'hr', 'input', 'link', 'meta']:
+    html = re.sub(r'<(' + tag + r')(\s[^>]*)?>(?!</)', lambda m: '<' + m.group(1) + (m.group(2) or '') + '/>', html)
+from lxml import etree
+try:
+    etree.fromstring('<root>' + html + '</root>')
+    print('XML valid')
+except etree.XMLSyntaxError as e:
+    print('XML ERROR:', e)
+    sys.exit(1)
+"
+```
+
+If XML errors are found, fix the draft (self-close all void elements) and re-run both validators.
+
 ---
 
 ## Step 6: Present to User

@@ -207,7 +207,8 @@ from odoo_client import OdooClient
 c = OdooClient()
 uid = c.authenticate()
 print('Connected — uid:', uid)
-pages = c.search_read('website.page', [('active','=',True)], ['url','name','is_published'])
+# search_read on website.page returns empty on Odoo Online SaaS — use _execute_kw with domain
+pages = c._execute_kw('website.page', 'search_read', [[]], {'fields': ['url','name','is_published'], 'limit': 50})
 print(f'{len(pages)} pages found:')
 for p in sorted(pages, key=lambda x: x['url']):
     pub = 'published' if p['is_published'] else 'draft'
@@ -215,9 +216,13 @@ for p in sorted(pages, key=lambda x: x['url']):
 "
 ```
 
+> ⚠️ **Odoo Online SaaS quirk:** `search_read` on `website` and `website.page` may return empty even when records exist. If you see "0 pages found" on a site that has pages, this is expected — see the note on homepage routing below.
+
 **If authentication error:** remind the user to fill in `ODOO_PASSWORD` in `.env`.
 
 **If connection error:** ask the user to double-check `ODOO_URL` and `ODOO_DB`.
+
+**Homepage routing on Odoo Online:** The page at `/` is **not** a normal `website.page` record. It is rendered by `ir.ui.view` key `website.homepage` (typically ID 585 or similar). To update the homepage, write directly to that view — do NOT use `push_page.py --create --url /`, which creates a duplicate unpublished page that is never served. To find the right view ID: `c._execute_kw('website.page', 'search_read', [[['url','=','/']]], {'fields':['id','name','view_id','is_published']})`.
 
 ---
 
@@ -257,7 +262,8 @@ if modules and modules[0]["state"] == "uninstalled":
     print("Installed theme_clean")
 
 # Link theme to website
-sites = c.search_read("website", [], ["id", "name", "theme_id"])
+# search_read on 'website' returns empty on Odoo Online — read by ID 1 directly
+sites = c.read("website", [1], ["id", "name", "theme_id"])
 print("Sites:", sites)
 
 theme_module = c.search_read("ir.module.module", [["name", "=", "theme_clean"]], ["id"])
